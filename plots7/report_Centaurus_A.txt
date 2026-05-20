@@ -1,0 +1,52 @@
+=========================================================================
+  REPORT STATISTICO: Centaurus A
+  Metodo: Monte Carlo Vettorializzato (10000 iterazioni)
+  Tempo di calcolo MC:  6.31 secondi
+  Tempo totale script:  7.15 secondi
+=========================================================================
+  Raggio Ottimale:      13.0°
+  Significatività (Loc): 3.719 sigma
+  P-Value (Loc):         9.999e-05
+=========================================================================
+
+Dettaglio per Raggio:
+ R=1.0° | Oss:   1 | Attesi:   0.27 | P-val: 2.40e-01 | Sig: 0.71
+ R=2.0° | Oss:   1 | Attesi:   1.01 | P-val: 6.35e-01 | Sig: 0.00
+ R=3.0° | Oss:   7 | Attesi:   2.34 | P-val: 1.07e-02 | Sig: 2.30
+ R=4.0° | Oss:   8 | Attesi:   4.09 | P-val: 5.61e-02 | Sig: 1.59
+ R=5.0° | Oss:   9 | Attesi:   6.30 | P-val: 1.84e-01 | Sig: 0.90
+ R=6.0° | Oss:  13 | Attesi:   9.09 | P-val: 1.31e-01 | Sig: 1.12
+ R=7.0° | Oss:  17 | Attesi:  12.22 | P-val: 1.15e-01 | Sig: 1.20
+ R=8.0° | Oss:  23 | Attesi:  16.01 | P-val: 6.12e-02 | Sig: 1.54
+ R=9.0° | Oss:  34 | Attesi:  20.21 | P-val: 3.50e-03 | Sig: 2.70
+ R=10.0° | Oss:  38 | Attesi:  25.08 | P-val: 1.03e-02 | Sig: 2.32
+ R=11.0° | Oss:  50 | Attesi:  30.46 | P-val: 5.00e-04 | Sig: 3.29
+ R=12.0° | Oss:  58 | Attesi:  36.34 | P-val: 3.00e-04 | Sig: 3.43
+ R=13.0° | Oss:  71 | Attesi:  42.41 | P-val: 1.00e-04 | Sig: 3.72
+ R=14.0° | Oss:  80 | Attesi:  49.03 | P-val: 1.00e-04 | Sig: 3.72
+ R=15.0° | Oss:  91 | Attesi:  55.83 | P-val: 1.00e-04 | Sig: 3.72
+ R=16.0° | Oss: 106 | Attesi:  63.24 | P-val: 1.00e-04 | Sig: 3.72
+ R=17.0° | Oss: 124 | Attesi:  71.30 | P-val: 1.00e-04 | Sig: 3.72
+ R=18.0° | Oss: 143 | Attesi:  79.99 | P-val: 1.00e-04 | Sig: 3.72
+ R=19.0° | Oss: 158 | Attesi:  88.82 | P-val: 1.00e-04 | Sig: 3.72
+ R=20.0° | Oss: 172 | Attesi:  98.51 | P-val: 1.00e-04 | Sig: 3.72
+ R=21.0° | Oss: 190 | Attesi: 107.98 | P-val: 1.00e-04 | Sig: 3.72
+ R=22.0° | Oss: 203 | Attesi: 118.61 | P-val: 1.00e-04 | Sig: 3.72
+ R=23.0° | Oss: 227 | Attesi: 129.71 | P-val: 1.00e-04 | Sig: 3.72
+ R=24.0° | Oss: 246 | Attesi: 140.67 | P-val: 1.00e-04 | Sig: 3.72
+ R=25.0° | Oss: 273 | Attesi: 152.23 | P-val: 1.00e-04 | Sig: 3.72
+ R=26.0° | Oss: 293 | Attesi: 164.13 | P-val: 1.00e-04 | Sig: 3.72
+ R=27.0° | Oss: 315 | Attesi: 176.24 | P-val: 1.00e-04 | Sig: 3.72
+ R=28.0° | Oss: 329 | Attesi: 189.35 | P-val: 1.00e-04 | Sig: 3.72
+ R=29.0° | Oss: 346 | Attesi: 202.54 | P-val: 1.00e-04 | Sig: 3.72
+ R=30.0° | Oss: 361 | Attesi: 216.63 | P-val: 1.00e-04 | Sig: 3.72
+ R=31.0° | Oss: 382 | Attesi: 230.40 | P-val: 1.00e-04 | Sig: 3.72
+ R=32.0° | Oss: 399 | Attesi: 244.60 | P-val: 1.00e-04 | Sig: 3.72
+ R=33.0° | Oss: 421 | Attesi: 259.22 | P-val: 1.00e-04 | Sig: 3.72
+ R=34.0° | Oss: 441 | Attesi: 274.16 | P-val: 1.00e-04 | Sig: 3.72
+ R=35.0° | Oss: 471 | Attesi: 289.62 | P-val: 1.00e-04 | Sig: 3.72
+ R=36.0° | Oss: 493 | Attesi: 305.20 | P-val: 1.00e-04 | Sig: 3.72
+ R=37.0° | Oss: 518 | Attesi: 320.61 | P-val: 1.00e-04 | Sig: 3.72
+ R=38.0° | Oss: 537 | Attesi: 336.68 | P-val: 1.00e-04 | Sig: 3.72
+ R=39.0° | Oss: 558 | Attesi: 353.16 | P-val: 1.00e-04 | Sig: 3.72
+ R=40.0° | Oss: 589 | Attesi: 370.28 | P-val: 1.00e-04 | Sig: 3.72
