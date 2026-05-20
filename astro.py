@@ -45,22 +45,28 @@ def genera_cielo_isotropo_pesato(expo_map, n_eventi):
     
     return ra, dec
 
-def test_statistico_montecarlo_globale(df, expo_map, sorgenti_dict, raggio_test=15.0, n_simulazioni=10000):
+def test_statistico_montecarlo_globale(df, expo_map, sorgenti_dict, max_raggio=40, n_simulazioni=10000):
     """
-    Calcola la significatività statistica per TUTTE le sorgenti contemporaneamente,
-    generando i cieli simulati una sola volta. Molto più veloce ed efficiente!
+    Esegue un'analisi Monte Carlo valutando CONTEMPORANEAMENTE tutti i raggi da 1° a 40°.
+    Non applica penalizzazioni, restituisce semplicemente l'andamento del p-value locale.
     """
     N_totali = len(df)
+    raggi = np.arange(1, max_raggio + 1) # Array [1, 2, ... 40]
     risultati = {}
     
-    print("   -> Calcolo eventi reali osservati...")
+    print(f"   -> Calcolo eventi reali osservati per raggi da 1° a {max_raggio}°...")
     for nome, coord in sorgenti_dict.items():
         dist_reale = calcola_distanza_angolare(df['RA'], df['Dec'], coord['RA'], coord['Dec'])
-        n_oss = np.sum(dist_reale <= raggio_test)
+        dist_reale_sorted = np.sort(dist_reale) # Ordinare serve per far funzionare searchsorted velocemente
+        
+        # Conta gli eventi <= raggio per tutti i 40 raggi in un colpo solo
+        n_oss_array = np.searchsorted(dist_reale_sorted, raggi, side='right')
         
         risultati[nome] = {
-            'osservati': n_oss,
-            'conteggi_simulati': np.zeros(n_simulazioni) 
+            'raggi': raggi,
+            'osservati_array': n_oss_array,
+            # Matrice per salvare le simulazioni: righe=simulazioni, colonne=raggi
+            'conteggi_simulati_array': np.zeros((n_simulazioni, max_raggio)) 
         }
 
     print(f"   -> Avvio simulazioni Monte Carlo globali ({n_simulazioni} cieli totali)...")
@@ -72,30 +78,76 @@ def test_statistico_montecarlo_globale(df, expo_map, sorgenti_dict, raggio_test=
         
         for nome, coord in sorgenti_dict.items():
             dist = calcola_distanza_angolare(ra, dec, coord['RA'], coord['Dec'])
-            n_in_tophat = np.sum(dist <= raggio_test)
-            risultati[nome]['conteggi_simulati'][i] = n_in_tophat
-
-    print("   -> Calcolo delle significatività completato.")
-    for nome in risultati:
-        n_oss = risultati[nome]['osservati']
-        conteggi_sim = risultati[nome]['conteggi_simulati']
-        
-        n_attesi_medio = np.mean(conteggi_sim)
-        simulazioni_superiori = np.sum(conteggi_sim >= n_oss)
-        
-        p_value = (simulazioni_superiori ) / (n_simulazioni)
-        
-        sigma = stats.norm.isf(p_value)
-        if np.isinf(sigma) or sigma < 0: 
-            sigma = 0.0
+            dist_sorted = np.sort(dist)
             
+            # Contiamo gli eventi finti per tutti i 40 raggi
+            n_in_tophat_array = np.searchsorted(dist_sorted, raggi, side='right')
+            risultati[nome]['conteggi_simulati_array'][i, :] = n_in_tophat_array
+
+    print("   -> Calcolo delle curve di p-value completato.")
+    for nome in risultati:
+        n_oss = risultati[nome]['osservati_array']
+        conteggi_sim = risultati[nome]['conteggi_simulati_array']
+        
+        # Valori attesi per ogni raggio (media delle colonne)
+        n_attesi = np.mean(conteggi_sim, axis=0)
+        
+        # Calcolo P-value: per ogni raggio, quante sim hanno battuto l'osservazione?
+        simulazioni_superiori = np.sum(conteggi_sim >= n_oss, axis=0)
+        
+        p_values = (simulazioni_superiori) / (n_simulazioni)
+        
+        sigmas = stats.norm.isf(p_values)
+        sigmas[np.isinf(sigmas) | (sigmas < 0)] = 0.0
+        
+        # Troviamo per comodità il raggio dove il p-value è minimo assoluto
+        idx_min = np.argmin(p_values)
+        
         risultati[nome].update({
-            'attesi': n_attesi_medio,
-            'p_value': p_value,
-            'sigma': sigma
+            'attesi_array': n_attesi,
+            'p_values_array': p_values,
+            'sigmas_array': sigmas,
+            'raggio_minimo': raggi[idx_min],
+            'p_value_minimo': p_values[idx_min],
+            'sigma_massimo': sigmas[idx_min]
         })
         
     return risultati
+
+def plot_pvalue_scan(risultati_scan, base_dir='plots'):
+    """Genera e salva i grafici del P-Value in funzione del raggio per ogni sorgente."""
+    print("\n---> Generazione dei grafici di scan del P-Value...")
+    out_dir = os.path.join(base_dir, 'pvalue_scans')
+    os.makedirs(out_dir, exist_ok=True)
+    
+    for nome, dati in risultati_scan.items():
+        plt.figure(figsize=(10, 6))
+        raggi = dati['raggi']
+        p_values = dati['p_values_array']
+        
+        plt.plot(raggi, p_values, marker='o', linestyle='-', color='blue', alpha=0.8)
+        
+        # Linea orizzontale a 3 sigma per riferimento visivo
+        plt.axhline(y=0.0013, color='red', linestyle='--', label='Soglia 3 Sigma')
+        
+        plt.yscale('log')
+        plt.xlabel('Raggio Top Hat (°)', fontsize=12)
+        plt.ylabel('P-Value Locale (Monte Carlo)', fontsize=12)
+        plt.title(f'Andamento P-Value in funzione del raggio: {nome}', fontsize=14)
+        
+        # Evidenziamo il punto minimo
+        r_min = dati['raggio_minimo']
+        p_min = dati['p_value_minimo']
+        plt.scatter([r_min], [p_min], color='red', s=100, zorder=5, label=f'Minimo a {r_min}°')
+        
+        plt.legend(loc='upper left')
+        plt.grid(True, which='both', linestyle='--', alpha=0.5)
+        
+        nome_file = f"scan_{nome.replace(' ', '_').replace('*', '')}.png"
+        plt.savefig(os.path.join(out_dir, nome_file))
+        plt.close()
+    
+    print(f"Grafici di scan salvati nella cartella: {out_dir}")
 
 def analisi_tophat_sorgente(df, nome_sorgente, ra_src, dec_src, max_raggio=40, base_dir='plots'):
     """Esegue l'analisi Top Hat per una singola sorgente e salva le mappe."""
@@ -215,7 +267,7 @@ if __name__ == "__main__":
     file_esposizione = 'exposure.fits'
     
     raggio_di_ricerca = 15.0  
-    NUM_SIMULAZIONI = 100000 
+    NUM_SIMULAZIONI = 100000
     
     os.makedirs(cartella_output, exist_ok=True)
     
@@ -239,34 +291,38 @@ if __name__ == "__main__":
             max_raggio=40, 
             base_dir=cartella_output
         )'''
-    print(f"\n---> Inizio Analisi Statistica Globale...")
+    print(f"\n---> Inizio Analisi Statistica Globale (Scan 1°-40°)...")
     risultati_statistici = test_statistico_montecarlo_globale(
         df=dataset, 
         expo_map=expo_map, 
         sorgenti_dict=sorgenti_da_analizzare, 
-        raggio_test=raggio_di_ricerca, 
+        max_raggio=40,  # Fissiamo il raggio massimo dello scan a 40°
         n_simulazioni=NUM_SIMULAZIONI
     )
+    
+    # Plottiamo le curve P-Value vs Raggio
+    plot_pvalue_scan(risultati_statistici, base_dir=cartella_output)
         
-    percorso_report = os.path.join(cartella_output, 'report_statistico_MC.txt')
+    percorso_report = os.path.join(cartella_output, 'report_statistico_SCAN_LOCALE.txt')
     
     with open(percorso_report, 'w') as f_out:
-        f_out.write("=========================================================\n")
-        f_out.write(f"  REPORT STATISTICO SORGENTI (Raggio Top Hat: {raggio_di_ricerca}°)\n")
+        f_out.write("=========================================================================\n")
+        f_out.write(f"  REPORT STATISTICO (Valori al raggio di massimo eccesso locale)\n")
         f_out.write(f"  Metodo: Monte Carlo ({NUM_SIMULAZIONI} cataloghi simulati globali)\n")
-        f_out.write("=========================================================\n")
-        # Allargati gli spazi: Attesi ora ha 15 caratteri, Sigma ne ha 8
-        f_out.write(f"{'Sorgente':<20} | {'Oss.':<5} | {'Attesi (MC)':<15} | {'Sigma':<8} | {'P-Value'}\n")
-        f_out.write("-" * 75 + "\n")
+        f_out.write("=========================================================================\n")
+        f_out.write(f"{'Sorgente':<18} | {'R-Opt':<5} | {'Sigma-Loc':<10} | {'P-Value-Loc'}\n")
+        f_out.write("-" * 60 + "\n")
     
         for nome, dati in risultati_statistici.items():
-            # Aggiunti i decimali: .4f per attesi, .3f per i sigma, .3e per il p-value
-            riga_report = f"{nome[:20]:<20} | {dati['osservati']:<5} | {dati['attesi']:<15.4f} | {dati['sigma']:<8.5f} | {dati['p_value']:.5e}\n"
+            riga_report = (f"{nome[:18]:<18} | "
+                           f"{dati['raggio_minimo']:>3}°  | "
+                           f"{dati['sigma_massimo']:<10.3f} | "
+                           f"{dati['p_value_minimo']:.3e}\n")
             f_out.write(riga_report)
-            print(f"   -> {nome}: {dati['osservati']} oss. vs {dati['attesi']:.2f} att. (Significatività: {dati['sigma']:.5f} sigma)")
+            print(f"   -> {nome}: Il segnale più forte è a {dati['raggio_minimo']}° ({dati['sigma_massimo']:.2f} sigma locali)")
             
-        f_out.write("=========================================================\n")
-        
+        f_out.write("=========================================================================\n")
+                
     mappa_calore_globale(dataset, sorgenti_da_analizzare, cartella_output)
     
     mappa_eventi_casuali(
