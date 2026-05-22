@@ -6,6 +6,8 @@ import healpy as hp
 import scipy.stats as stats
 import time
 from numba import njit, prange
+from astropy.coordinates import SkyCoord
+import astropy.units as u
 
 def carica_dati(filepath):
     """Carica e pulisce il dataset di Auger."""
@@ -38,8 +40,14 @@ def genera_cielo_isotropo_pesato(expo_map, n_eventi):
     nside = hp.npix2nside(n_pixel_totali)
     theta, phi = hp.pix2ang(nside, indici_estratti)
     
-    ra = np.degrees(phi)
-    dec = 90.0 - np.degrees(theta)
+    # I pixel estratti sono in coordinate Galattiche (l, b)
+    l_gal = np.degrees(phi)
+    b_gal = 90.0 - np.degrees(theta)
+    
+    # Convertiamo in coordinate Equatoriali (RA, Dec)
+    c = SkyCoord(l=l_gal*u.degree, b=b_gal*u.degree, frame='galactic')
+    ra = c.icrs.ra.degree
+    dec = c.icrs.dec.degree
     
     return ra, dec
 
@@ -55,9 +63,16 @@ def prepara_dati_numba(expo_map):
     nside = hp.npix2nside(n_pixel_totali)
     theta, phi = hp.pix2ang(nside, np.arange(n_pixel_totali))
     
+    # I pixel estratti sono in coordinate Galattiche (l, b)
+    l_gal = np.degrees(phi)
+    b_gal = 90.0 - np.degrees(theta)
+    
+    # Convertiamo in coordinate Equatoriali (RA, Dec) per il match corretto
+    c = SkyCoord(l=l_gal*u.degree, b=b_gal*u.degree, frame='galactic')
+    
     # Convertiamo tutto in radianti per velocizzare Numba
-    pixel_ra_rad = phi
-    pixel_dec_rad = (np.pi / 2.0) - theta
+    pixel_ra_rad = c.icrs.ra.radian
+    pixel_dec_rad = c.icrs.dec.radian
     
     return pixel_cdf, pixel_ra_rad, pixel_dec_rad
 
@@ -75,14 +90,14 @@ def esegui_simulazioni_numba_multi(n_simulazioni, n_eventi, pixel_cdf, pixel_ra_
     for i in prange(n_simulazioni):
         # Generiamo il cielo per questa iterazione simulata
         for j in range(n_eventi):
-            # 1. Estrazione pixel random (Inverse Transform Sampling sulla CDF)
+            # Estrazione pixel random (Inverse Transform Sampling sulla CDF)
             u = np.random.rand()
             pix_idx = np.searchsorted(pixel_cdf, u)
             
             ra_rad = pixel_ra_rad[pix_idx]
             dec_rad = pixel_dec_rad[pix_idx]
             
-            # 2. Controllo contro ogni sorgente
+            # Controllo contro ogni sorgente
             for k in range(n_src):
                 cos_theta = (np.sin(dec_rad) * np.sin(srcs_dec_rad[k]) + 
                              np.cos(dec_rad) * np.cos(srcs_dec_rad[k]) * np.cos(ra_rad - srcs_ra_rad[k]))
@@ -92,7 +107,7 @@ def esegui_simulazioni_numba_multi(n_simulazioni, n_eventi, pixel_cdf, pixel_ra_
                 
                 dist = np.degrees(np.arccos(cos_theta))
                 
-                # 3. Binning istantaneo nei raggi top-hat (1°...max_raggio)
+                # Binning istantaneo nei raggi top-hat (1°...max_raggio)
                 start_idx = int(np.ceil(dist)) - 1
                 if start_idx < 0:
                     start_idx = 0
@@ -130,8 +145,8 @@ def test_statistico_montecarlo_globale(df, expo_map, sorgenti_dict, max_raggio=4
     print("   -> Preparazione mappe CDF per il motore compilato Numba...")
     pixel_cdf, pixel_ra_rad, pixel_dec_rad = prepara_dati_numba(expo_map)
 
-    # --- STRATEGIA DI PROGRESSIONE A BLOCCHI ---
-    n_blocchi = 10  # Suddividiamo la barra di avanzamento in 10 step (es. 10%, 20%...)
+    # Suddividiamo la barra di avanzamento in 10 step (es. 10%, 20%...)
+    n_blocchi = 10  
     if n_simulazioni < n_blocchi:
         n_blocchi = 1
         
@@ -170,7 +185,6 @@ def test_statistico_montecarlo_globale(df, expo_map, sorgenti_dict, max_raggio=4
     tempo_simulazione = end_sim_time - start_sim_time
     print(f"   -> Calcolo parallelo completato con successo in {tempo_simulazione:.2f} secondi.")
     
-    # --- ELABORAZIONE STATISTICA FINALE (Invariata) ---
     for k, nome in enumerate(nomi_sorgenti):
         risultati[nome]['tempo_simulazione'] = tempo_simulazione
         n_oss = risultati[nome]['osservati_array']
@@ -213,6 +227,8 @@ def plot_pvalue_scan(risultati_scan, base_dir='plots'):
         
         plt.axhline(y=0.0013, color='red', linestyle='--', label='Soglia 3 Sigma')
         
+        # Protezione per la scala logaritmica se p_value è 0
+        p_values_plot = np.where(p_values == 0, 1e-10, p_values) # Valore fittizio molto basso per il plot
         plt.yscale('log')
         plt.xlabel('Raggio Top Hat (°)', fontsize=12)
         plt.ylabel('P-Value Locale (Monte Carlo)', fontsize=12)
@@ -220,7 +236,11 @@ def plot_pvalue_scan(risultati_scan, base_dir='plots'):
         
         r_min = dati['raggio_minimo']
         p_min = dati['p_value_minimo']
-        plt.scatter([r_min], [p_min], color='red', s=100, zorder=5, label=f'Minimo a {r_min}°')
+        
+        # Gestione visiva del minimo se è 0
+        p_min_plot = 1e-10 if p_min == 0 else p_min
+        label_min = f'Minimo a {r_min}° (Limite Superiore)' if p_min == 0 else f'Minimo a {r_min}°'
+        plt.scatter([r_min], [p_min_plot], color='red', s=100, zorder=5, label=label_min)
         
         plt.legend(loc='upper left')
         plt.grid(True, which='both', linestyle='--', alpha=0.5)
@@ -305,8 +325,9 @@ def mappa_eventi_casuali(expo_map, dizionario_sorgenti, n_eventi=2635, base_dir=
     
     plt.figure(figsize=(12, 7))
     
+    # la mappa di sfondo da Galattica a Equatoriale per la visualizzazione!
     hp.mollview(expo_map, hold=True, title=f"Cielo Finto Monte Carlo ({n_eventi} eventi)", 
-                cmap='viridis', unit='Esposizione Relativa', coord=['C'])
+                cmap='viridis', unit='Esposizione Relativa', coord=['G', 'C'])
     hp.graticule()
 
     hp.projscatter(ra, dec, lonlat=True, coord='C', 
@@ -329,7 +350,6 @@ def mappa_eventi_casuali(expo_map, dizionario_sorgenti, n_eventi=2635, base_dir=
 
 if __name__ == "__main__":
     
-    # DIZIONARIO SPECIALIZZATO SOLO PER CENTAURUS A
     sorgenti_da_analizzare = {
         "Centaurus A": {"RA": 201.3, "Dec": -43.0}
     }
@@ -339,7 +359,7 @@ if __name__ == "__main__":
     file_esposizione = 'exposure.fits'
     
     raggio_di_ricerca = 15.0  
-    NUM_SIMULAZIONI = 20000000
+    NUM_SIMULAZIONI = 10_000_000
     
     os.makedirs(cartella_output, exist_ok=True)
     start_total_time = time.perf_counter()

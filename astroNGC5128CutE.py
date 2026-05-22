@@ -90,14 +90,14 @@ def esegui_simulazioni_numba_multi(n_simulazioni, n_eventi, pixel_cdf, pixel_ra_
     for i in prange(n_simulazioni):
         # Generiamo il cielo per questa iterazione simulata
         for j in range(n_eventi):
-            # 1. Estrazione pixel random (Inverse Transform Sampling sulla CDF)
+            # Estrazione pixel random (Inverse Transform Sampling sulla CDF)
             u = np.random.rand()
             pix_idx = np.searchsorted(pixel_cdf, u)
             
             ra_rad = pixel_ra_rad[pix_idx]
             dec_rad = pixel_dec_rad[pix_idx]
             
-            # 2. Controllo contro ogni sorgente
+            # Controllo contro ogni sorgente
             for k in range(n_src):
                 cos_theta = (np.sin(dec_rad) * np.sin(srcs_dec_rad[k]) + 
                              np.cos(dec_rad) * np.cos(srcs_dec_rad[k]) * np.cos(ra_rad - srcs_ra_rad[k]))
@@ -107,7 +107,7 @@ def esegui_simulazioni_numba_multi(n_simulazioni, n_eventi, pixel_cdf, pixel_ra_
                 
                 dist = np.degrees(np.arccos(cos_theta))
                 
-                # 3. Binning istantaneo nei raggi top-hat (1°...max_raggio)
+                # Binning istantaneo nei raggi top-hat (1°...max_raggio)
                 start_idx = int(np.ceil(dist)) - 1
                 if start_idx < 0:
                     start_idx = 0
@@ -145,7 +145,6 @@ def test_statistico_montecarlo_globale(df, expo_map, sorgenti_dict, max_raggio=4
     print("   -> Preparazione mappe CDF per il motore compilato Numba...")
     pixel_cdf, pixel_ra_rad, pixel_dec_rad = prepara_dati_numba(expo_map)
 
-    # --- STRATEGIA DI PROGRESSIONE A BLOCCHI ---
     n_blocchi = 10  # Suddividiamo la barra di avanzamento in 10 step (es. 10%, 20%...)
     if n_simulazioni < n_blocchi:
         n_blocchi = 1
@@ -185,7 +184,6 @@ def test_statistico_montecarlo_globale(df, expo_map, sorgenti_dict, max_raggio=4
     tempo_simulazione = end_sim_time - start_sim_time
     print(f"   -> Calcolo parallelo completato con successo in {tempo_simulazione:.2f} secondi.")
     
-    # --- ELABORAZIONE STATISTICA FINALE (Invariata) ---
     for k, nome in enumerate(nomi_sorgenti):
         risultati[nome]['tempo_simulazione'] = tempo_simulazione
         n_oss = risultati[nome]['osservati_array']
@@ -352,7 +350,6 @@ def mappa_eventi_casuali(expo_map, dizionario_sorgenti, n_eventi=2635, base_dir=
 
 if __name__ == "__main__":
     
-    # DIZIONARIO SPECIALIZZATO SOLO PER CENTAURUS A
     sorgenti_da_analizzare = {
         "Centaurus A": {"RA": 201.3, "Dec": -43.0}
     }
@@ -370,7 +367,7 @@ if __name__ == "__main__":
     dataset = carica_dati(file_dati)
     print(f"Dati caricati: {len(dataset)} eventi trovati.")
     
-    # --- NUOVO TAGLIO IN ENERGIA A 39 EeV ---
+    # TAGLIO IN ENERGIA A 39 EeV
     TAGLIO_E = 39.0
     dataset = dataset[dataset['E'] >= TAGLIO_E]
     print(f"Dati dopo il taglio E >= {TAGLIO_E} EeV: {len(dataset)} eventi rimanenti.")
