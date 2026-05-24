@@ -1,15 +1,15 @@
-# AstroLab: Cosmic Ray Statistical Analysis
+# Cosmic Ray Statistical Analysis
 
 > :it: **[Italiano](#italiano)** | :uk: **[English](#english)**
 
 ---
 
 <a name="italiano"></a>
-# :it: AstroLab: Analisi Statistica di Raggi Cosmici
+# :it: Analisi Statistica di Raggi Cosmici
 
 ## Panoramica
 
-**AstroLab** è una suite di strumenti Python per l'analisi statistica avanzata di dati di raggi cosmici ad altissima energia provenienti dal **Pierre Auger Observatory**. Il progetto implementa sofisticate tecniche Monte Carlo per identificare correlazioni anomale tra gli eventi di raggi cosmici osservati e sorgenti astrofisiche extragalattiche, con focus particolare su **Centaurus A (NGC 5128)**.
+**auger-anisotropy-scan** è una suite di strumenti Python per l'analisi statistica avanzata di dati di raggi cosmici ad altissima energia provenienti dal **Pierre Auger Observatory**. Il progetto implementa sofisticate tecniche Monte Carlo per identificare correlazioni anomale tra gli eventi di raggi cosmici osservati e sorgenti astrofisiche extragalattiche, con focus particolare su **Centaurus A (NGC 5128)**.
 
 ### Obiettivi Scientifici
 
@@ -21,7 +21,7 @@
 ## Struttura del Progetto
 
 ```
-AstroLab/
+auger-anisotropy-scan/
 ├── astro.py                      # Analisi base globale - test Monte Carlo
 ├── astroNGC5128.py              # Analisi ottimizzata con Numba (NGC 5128)
 ├── astroNGC5128CutE.py          # Analisi con filtro energetico
@@ -295,11 +295,11 @@ Nel database `OldPlots/` sono conservate analisi su multiple sorgenti e campioni
 ---
 
 <a name="english"></a>
-# :uk: AstroLab: Cosmic Ray Statistical Analysis
+# :uk: Cosmic Ray Statistical Analysis
 
 ## Overview
 
-**AstroLab** is a Python toolkit for advanced statistical analysis of ultra-high-energy cosmic ray data from the **Pierre Auger Observatory**. The project implements sophisticated Monte Carlo techniques to identify anomalous correlations between observed cosmic ray events and extragalactic astrophysical sources, with particular focus on **Centaurus A (NGC 5128)**.
+**auger-anisotropy-scan** is a Python toolkit for advanced statistical analysis of ultra-high-energy cosmic ray data from the **Pierre Auger Observatory**. The project implements sophisticated Monte Carlo techniques to identify anomalous correlations between observed cosmic ray events and extragalactic astrophysical sources, with particular focus on **Centaurus A (NGC 5128)**.
 
 ### Scientific Goals
 
@@ -311,7 +311,7 @@ Nel database `OldPlots/` sono conservate analisi su multiple sorgenti e campioni
 ## Project Structure
 
 ```
-AstroLab/
+auger-anisotropy-scan/
 ├── astro.py                      # Base global analysis - Monte Carlo tests
 ├── astroNGC5128.py              # Numba-optimized analysis (NGC 5128)
 ├── astroNGC5128CutE.py          # Analysis with energy filtering
