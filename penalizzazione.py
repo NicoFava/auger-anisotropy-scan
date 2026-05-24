@@ -212,10 +212,10 @@ if __name__ == "__main__":
     TARGET_PVALUE_REALE = 9.8e-06
     
     # Quanti cieli per ciclo.
-    CIELI_PER_BATCH = 100_000 
+    CIELI_PER_BATCH = 1_000_000 
     
     # Quanti blocchi vuoi eseguire.
-    NUMERO_DI_BATCH = 100       
+    NUMERO_DI_BATCH = 10       
     # ------------------------------------------------------------
     
     dataset = carica_dati(file_dati)
